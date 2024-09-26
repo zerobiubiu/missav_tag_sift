@@ -5,6 +5,7 @@
 // @description  111
 // @author       You
 // @match        https://missav.com/dm*
+// @match        https://missav.com/cn/genres/*
 // @grant        none
 // ==/UserScript==
 
@@ -28,50 +29,29 @@
         // document.body.appendChild(script);
     }
 
-    // 创建一个筛选组件
-    function newFilterComponent() {
-        const newParagraph = document.createElement('div');
-        newParagraph.innerHTML = `
-            <button type="button" class="btn btn-secondary" data-bs-toggle="dropdown" aria-expanded="false"
-                data-bs-auto-close="outside">
-                筛选
-            </button>
-            <form class="dropdown-menu dropdown-menu-dark p-3">
-                <div style="width: 300px;" class="d-flex flex-wrap">
-                    <div class="form-check m-2">
-                        <label class="form-check-label">
-                            <input type="checkbox" class="form-check-input" id="dropdownCheck1">
-                            选项
-                        </label>
-                    </div>
-                    <div class="form-check m-2">
-                        <label class="form-check-label">
-                            <input type="checkbox" class="form-check-input" id="dropdownCheck1">
-                            选项
-                        </label>
-                    </div>
-                    <div class="form-check m-2">
-                        <label class="form-check-label">
-                            <input type="checkbox" class="form-check-input" id="dropdownCheck1">
-                            选项
-                        </label>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-primary" id="tag-search-but">搜索</button>
-                </div>
-            </form>`
-        newParagraph.className = 'dropdown'
-        newParagraph.setAttribute('id', 'filterComponent-dropdown-fcd');
-
-        return newParagraph
-    }
-
-    // 创建筛选组件 DOM
-    const FilterComponent = newFilterComponent();
-
     // 附加筛选组件
     {
+        // 创建一个筛选组件函数变量
+        const FilterComponent = () => {
+            const newParagraph = document.createElement('div');
+            newParagraph.innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-toggle="dropdown" aria-expanded="false"
+                    data-bs-auto-close="outside">
+                    筛选
+                </button>
+                <form class="dropdown-menu dropdown-menu-dark p-3">
+                    <div style="width: 300px;" class="d-flex flex-wrap">
+
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary" id="tag-search-but">搜索</button>
+                    </div>
+                </form>`
+            newParagraph.className = 'dropdown'
+            newParagraph.setAttribute('id', 'filterComponent-dropdown-fcd');
+            return newParagraph
+        };
+
         // 定位附加 DOM
         const titleDiv = document.querySelector(
             "body > div:nth-child(2) > div.sm\\:container.mx-auto.px-4.content-without-search.pb-12 > div.flex.justify-between.mb-6"
@@ -80,23 +60,23 @@
         // 判断是否定位到 DOM
         if (titleDiv) {
             // 附加在 DOM 的第一个
-            titleDiv.insertBefore(FilterComponent, titleDiv.firstChild);
+            titleDiv.insertBefore(FilterComponent(), titleDiv.firstChild);
         }
     }
 
-    // 获取最大页数
+    // 获取最大页码
     function getPageNumbers() {
-        // 获取当前分类的最大页码
-
         for (i = 13; i > 1; i--) {
             endPageNum = document.querySelector(`body > div:nth-child(2) > div.sm\\:container.mx-auto.px-4.content-without-search.pb-12 > nav > div.hidden.md\\:flex-1.md\\:flex.md\\:items-center.md\\:justify-center > span > a:nth-child(${i})`)
-            if (endPageNum) {
-                nextPageNum = document.querySelector(`body > div:nth-child(2) > div.sm\\:container.mx-auto.px-4.content-without-search.pb-12 > nav > div.hidden.md\\:flex-1.md\\:flex.md\\:items-center.md\\:justify-center > span > a:nth-child(${i - 1})`)
-                if (nextPageNum.getAttribute('href') == endPageNum.getAttribute('href')) {
-                    return parseInt(nextPageNum.textContent.trim());
-                }
-                else {
+            nextPageNum = document.querySelector(`body > div:nth-child(2) > div.sm\\:container.mx-auto.px-4.content-without-search.pb-12 > nav > div.hidden.md\\:flex-1.md\\:flex.md\\:items-center.md\\:justify-center > span > a:nth-child(${i - 1})`)
+
+            if (i != 13 && endPageNum) {
+                return parseInt(nextPageNum.textContent.trim());
+            } else if (i == 13 && endPageNum) {
+                if (parseInt(endPageNum.textContent.trim()) >= 13) {
                     return parseInt(endPageNum.textContent.trim());
+                } else {
+                    return parseInt(nextPageNum.textContent.trim());
                 }
             }
         }
@@ -104,7 +84,7 @@
         return 1;
     }
 
-    // 获取每个页面的所有链接并解析标签
+    // 获取所有页内的所有链接并解析标签
     async function getTags(pageNum) {
         const tagSet = new Set();
         const headers = {
@@ -186,16 +166,32 @@
         return tagSet;
     }
 
+    const list = document.getElementById('filterComponent-dropdown-fcd').querySelector(`form > div.d-flex.flex-wrap`);
+
+    getTags(getPageNumbers()).then(tags => {
+        tags.forEach((value) => {
+            const option = `
+                <div class="form-check m-2">
+                    <label class="form-check-label">
+                        <input type="checkbox" class="form-check-input" id="dropdownCheck-${value}">
+                            ${value}
+                    </label>
+                </div>`
+
+            list.innerHTML += option
+        });
+    });
+
     // Test
-    {
-        getTags(1).then(tags => {
-            console.log(tags);
-        });
+    // {
+    //     getTags(1).then(tags => {
+    //         console.log(tags);
+    //     });
 
-        getPageTag("https://missav.com/cn/fft-016-uncensored-leak").then(tags => {
-            console.log(tags);
-        });
+    //     getPageTag("https://missav.com/cn/fft-016-uncensored-leak").then(tags => {
+    //         console.log(tags);
+    //     });
 
-        getPageNumbers();
-    }
+    //     getPageNumbers();
+    // }
 })();
